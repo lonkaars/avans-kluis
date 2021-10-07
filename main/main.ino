@@ -1,6 +1,9 @@
 #define SERIAL_BAUD 115200
 #define MAX_CODE_LEN 1024
 
+#define BUZZ_HAPPY 1000
+#define BUZZ_SAD   700
+
 #define PINOUT_KBM7   4
 #define PINOUT_KBM6   5
 #define PINOUT_KBM5   6
@@ -8,12 +11,12 @@
 #define PINOUT_KBM3   12
 #define PINOUT_KBM2   8
 #define PINOUT_KBM1   9
-#define PINOUT_LED_Y  19
-#define PINOUT_LED_R  18
-#define PINOUT_LED_G  17
-#define PINOUT_BUZZ   16
-#define PINOUT_SET    15
-#define PINOUT_RELAIS 14
+#define PINOUT_LED_Y  A5
+#define PINOUT_LED_R  A4
+#define PINOUT_LED_G  A3
+#define PINOUT_BUZZ   A2
+#define PINOUT_SET    A1
+#define PINOUT_RELAIS A0
 
 #define KB_ROW_1 PINOUT_KBM2
 #define KB_ROW_2 PINOUT_KBM3
@@ -22,6 +25,19 @@
 #define KB_COL_1 PINOUT_KBM1
 #define KB_COL_2 PINOUT_KBM4
 #define KB_COL_3 PINOUT_KBM6
+
+#define KB_KEY_1 0
+#define KB_KEY_2 1
+#define KB_KEY_3 2
+#define KB_KEY_4 3
+#define KB_KEY_5 4
+#define KB_KEY_6 5
+#define KB_KEY_7 6
+#define KB_KEY_8 7
+#define KB_KEY_9 8
+#define KB_KEY_C 9
+#define KB_KEY_0 10
+#define KB_KEY_E 11
 
 int kb_rows[] = { KB_ROW_1, KB_ROW_2, KB_ROW_3, KB_ROW_4 };
 int kb_cols[] = { KB_COL_1, KB_COL_2, KB_COL_3 };
@@ -42,16 +58,23 @@ void setup() {
 	// Start serial (vooral voor debugging)
 	Serial.begin(SERIAL_BAUD);
 
-	// keyboard kolommen als output
-	pinMode(KB_COL_1, OUTPUT);
-	pinMode(KB_COL_2, OUTPUT);
-	pinMode(KB_COL_3, OUTPUT);
+	// keyboard kolommen als input
+	pinMode(KB_COL_1, INPUT_PULLUP);
+	pinMode(KB_COL_2, INPUT_PULLUP);
+	pinMode(KB_COL_3, INPUT_PULLUP);
 
-	// keyboard rijen als input
-	pinMode(KB_ROW_1, INPUT_PULLUP);
-	pinMode(KB_ROW_2, INPUT_PULLUP);
-	pinMode(KB_ROW_3, INPUT_PULLUP);
-	pinMode(KB_ROW_4, INPUT_PULLUP);
+	// keyboard rijen als output
+	pinMode(KB_ROW_1, OUTPUT);
+	pinMode(KB_ROW_2, OUTPUT);
+	pinMode(KB_ROW_3, OUTPUT);
+	pinMode(KB_ROW_4, OUTPUT);
+
+	// Overige outputs
+	pinMode(PINOUT_LED_G, OUTPUT);
+	pinMode(PINOUT_LED_R, OUTPUT);
+	pinMode(PINOUT_LED_Y, OUTPUT);
+	pinMode(PINOUT_RELAIS, OUTPUT);
+	pinMode(PINOUT_BUZZ, OUTPUT);
 }
 
 void kb_scan() {
@@ -61,22 +84,39 @@ void kb_scan() {
 	// stel alle indices van kb_old in op 0
 	memset(&kb, 0, sizeof(kb));
 
-	for (int col = 0; col < 3; col++) {
-		digitalWrite(kb_cols[col], HIGH);
-		delay(10);
+	for (int row = 0; row < 4; row++) {
+		Serial.print("Pin ");
+		Serial.print(kb_rows[row], DEC);
+		Serial.print(" is now high\n");
+		digitalWrite(kb_rows[row], HIGH);
 
-		for (int row = 0; row < 4; row++) {
-			Serial.print("checking pin ");
+		for (int col = 0; col < 3; col++) {
+			// Serial.print("checking pin ");
+			// Serial.print(kb_cols[col], DEC);
+			// Serial.print(" -> ");
+			// Serial.print(kb_rows[row], DEC);
+			// Serial.print(" ...\n");
+
+			// Serial.print("kb[");
+			// Serial.print(3 * row + col, DEC);
+			// Serial.print("] (c");
+			// Serial.print(kb_cols[col], DEC);
+			// Serial.print(", r");
+			// Serial.print(kb_rows[row], DEC);
+			// Serial.print(")\n");
+			kb[3 * row + col] = !digitalRead(kb_cols[col]);
+
+			Serial.print("Pin ");
 			Serial.print(kb_cols[col], DEC);
-			Serial.print(" -> ");
-			Serial.print(kb_rows[row], DEC);
-			Serial.print(" ...\n");
-
-			kb[3 * col + row] = digitalRead(kb_rows[row]);
-			delay(10);
+			Serial.print(" is now ");
+			Serial.print(digitalRead(kb_cols[col]), DEC);
+			Serial.print("\n");
 		}
 
-		digitalWrite(kb_cols[col], LOW);
+		digitalWrite(kb_rows[row], LOW);
+		Serial.print("Pin ");
+		Serial.print(kb_rows[row], DEC);
+		Serial.print(" is now low\n");
 		delay(10);
 	}
 }
@@ -91,30 +131,36 @@ void debug_print_arr(unsigned char x[12]) {
 }
 
 void wrong_code_routine() {
-	//TODO: buzz;
+	tone(PINOUT_BUZZ, BUZZ_SAD);
 	digitalWrite(PINOUT_LED_R, HIGH);
 
 	delay(1e3); // shorthand voor 1000
 
 	digitalWrite(PINOUT_LED_R, LOW);
+	noTone(PINOUT_BUZZ);
 }
 
 void unlock_routine() {
-	//TODO: open_solenoid();
-	//TODO: buzz;
+	tone(PINOUT_BUZZ, BUZZ_HAPPY);
+	digitalWrite(PINOUT_RELAIS, HIGH);
 	digitalWrite(PINOUT_LED_G, HIGH);
 
 	delay(2e3);
 
 	digitalWrite(PINOUT_LED_G, LOW);
+	digitalWrite(PINOUT_RELAIS, LOW);
+	noTone(PINOUT_BUZZ);
 }
 
 void kb_onevent(kb_event ev) {
 	if (!ev.down) return;
 
+	if (ev.key != KB_KEY_E) tone(PINOUT_BUZZ, BUZZ_HAPPY, 200);
+
+  Serial.println(ev.key, DEC);
+
 	switch (ev.key) {
-		// C toets (clear)
-		case 9: {
+		case KB_KEY_C: {
 			// TODO: kijk of sizeof() werkt voor arrays
 			memset(&code, 0, sizeof(code));
 			codei = 0;
@@ -122,8 +168,7 @@ void kb_onevent(kb_event ev) {
 			break;
 		}
 
-		// E toets (enter)
-		case 11: {
+		case KB_KEY_E: {
 			//TODO: array length
 			int correct_code_len = 3;
 			bool correct = true;
@@ -152,6 +197,8 @@ void kb_onevent(kb_event ev) {
 
 		// Overige toetsen (nummers)
 		default: {
+			//TODO: NON BLOCKING LED VOOR ALLE LEDS
+
 			// bereken getal op toets
 			// (key + 1 voor alle toetsen behalve 0)
 			int num = ev.key == 10 ? 0 : ev.key + 1;
@@ -159,8 +206,6 @@ void kb_onevent(kb_event ev) {
 			// voeg getal toe aan het einde van de code
 			code[codei] = num;
 			codei++;
-
-			//TODO: beep
 		}
 	}
 }
@@ -172,7 +217,7 @@ void kb_event_gen() {
 		if (kb[i] == kb_old[i]) continue;
 
 		kb_event event = {
-			.key = i,
+			.key = (unsigned char) i,
 			.down = kb[i],
 			.timestamp = millis()
 		};
@@ -182,11 +227,15 @@ void kb_event_gen() {
 }
 
 void loop() {
+	// unlock_routine();
+	// delay(3e3);
+	// wrong_code_routine();
+	// delay(10e3);
 	kb_scan();
 	kb_event_gen();
-	debug_print_arr(kb);
-	Serial.print("time ");
-  Serial.print(millis(), DEC);
-  Serial.print("\n");
-	delay(1e3);
+	// debug_print_arr(kb);
+	// Serial.print("time ");
+  // Serial.print(millis(), DEC);
+  // Serial.print("\n");
+	// delay(1e3);
 }
