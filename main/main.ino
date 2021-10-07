@@ -1,19 +1,19 @@
 #define SERIAL_BAUD 115200
 #define MAX_CODE_LEN 1024
 
-#define PINOUT_KBM7 1
-#define PINOUT_KBM6 3
-#define PINOUT_KBM5 5
-#define PINOUT_KBM4 7
-#define PINOUT_KBM3 9
-#define PINOUT_KBM2 11
-#define PINOUT_KBM1 13
-#define PINOUT_LED_Y 6
-#define PINOUT_LED_R 8
-#define PINOUT_LED_G 10
-#define PINOUT_BUZZ 12
-#define PINOUT_SET 14
-#define PINOUT_RELAIS 16
+#define PINOUT_KBM7   4
+#define PINOUT_KBM6   5
+#define PINOUT_KBM5   6
+#define PINOUT_KBM4   7
+#define PINOUT_KBM3   12
+#define PINOUT_KBM2   8
+#define PINOUT_KBM1   9
+#define PINOUT_LED_Y  19
+#define PINOUT_LED_R  18
+#define PINOUT_LED_G  17
+#define PINOUT_BUZZ   16
+#define PINOUT_SET    15
+#define PINOUT_RELAIS 14
 
 #define KB_ROW_1 PINOUT_KBM2
 #define KB_ROW_2 PINOUT_KBM3
