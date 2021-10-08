@@ -23,9 +23,10 @@ const int kb_cols[] = { KB_COL_1, KB_COL_2, KB_COL_3 };
 #define LED_Y 2
 
 const int led_pinouts[] = { PINOUT_LED_R, PINOUT_LED_G, PINOUT_LED_Y };
-unsigned long led_timings[] = { 0, 0, 0 };
-bool led_status[] = { 0, 0, 0 };
+unsigned long led_timings[3];
+bool led_status[3];
 
+unsigned long kb_timings[12];
 unsigned char kb[12], kb_old[12];
 
 unsigned char correct_code[MAX_CODE_LEN];
@@ -105,8 +106,25 @@ void debug_print_arr(unsigned char x[12]) {
 	Serial.print("]\n");
 }
 
+/** @brief debug functie die de huidige ingevoerde code print */
+void debug_print_code() {
+	Serial.print("code: ");
+	for(int i = 0; i < codei; i++) {
+		Serial.print(code[i], DEC);
+		if (i < codei - 1) Serial.print(",");
+	}
+	Serial.print("\n");
+}
+
+// wat zou deze functie toch doen
+void clear_code() {
+	memset(&code, 0, MAX_CODE_LEN);
+	codei = 0;
+}
+
 /** @brief wordt uitgevoerd wanneer de verkeerde code is ingevoerd */
 void wrong_code_routine() {
+	Serial.println("verkeerde code");
 	tone(PINOUT_BUZZ, BUZZ_SAD);
 	digitalWrite(PINOUT_LED_R, HIGH);
 
@@ -114,10 +132,13 @@ void wrong_code_routine() {
 
 	digitalWrite(PINOUT_LED_R, LOW);
 	noTone(PINOUT_BUZZ);
+
+	clear_code();
 }
 
 /** @brief wordt uitgevoerd wanneer de juiste code is ingevoerd */
 void unlock_routine() {
+	Serial.println("juiste");
 	tone(PINOUT_BUZZ, BUZZ_HAPPY);
 	digitalWrite(PINOUT_RELAIS, HIGH);
 	digitalWrite(PINOUT_LED_G, HIGH);
@@ -127,6 +148,8 @@ void unlock_routine() {
 	digitalWrite(PINOUT_LED_G, LOW);
 	digitalWrite(PINOUT_RELAIS, LOW);
 	noTone(PINOUT_BUZZ);
+
+	clear_code();
 }
 
 /** @brief wordt uitgevoerd wanneer "E" wordt ingedrukt */
@@ -145,9 +168,6 @@ void check_code() {
 		break;
 	}
 	
-	// debug
-	Serial.print(correct, DEC);
-
 	// kijk mama zonder haakjes!
 	if (correct)
 		unlock_routine();
@@ -162,21 +182,23 @@ void check_code() {
 void kb_onevent(kb_event ev) {
 	if (!ev.down) return; // alleen uit naar aan events boeien (voor nu)
 
+	// zorgt ervoor dat je een toets niet vaker dan een periode van
+	// KB_DEBOUNCE_DELAY kunt indrukken
+	bool bounce = kb_timings[ev.key] + KB_DEBOUNCE_DELAY > millis();
+	kb_timings[ev.key] = ev.timestamp;
+	if (bounce) return;
+
 	// korte pieptoon als een nummertoets of *clear* wordt ingedrukt
 	if (ev.key != KB_KEY_E) tone(PINOUT_BUZZ, BUZZ_HAPPY, 200);
 
 	switch (ev.key) {
 		case KB_KEY_C: {
-			// leeg code[]
-			memset(&code, 0, MAX_CODE_LEN);
-			codei = 0;
-
+			clear_code();
 			break;
 		}
 
 		case KB_KEY_E: {
 			check_code();
-
 			break;
 		}
 
@@ -190,9 +212,11 @@ void kb_onevent(kb_event ev) {
 
 			// voeg getal toe aan het einde van de code
 			code[codei] = num;
-			codei++;
+			codei++; //TODO: fix array out of bounds crash
 		}
 	}
+
+	debug_print_code();
 }
 
 /**

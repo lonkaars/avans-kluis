@@ -1,5 +1,6 @@
 #define SERIAL_BAUD 115200
 #define MAX_CODE_LEN 1024
+#define KB_DEBOUNCE_DELAY 100
 
 #define BUZZ_HAPPY 1000
 #define BUZZ_SAD   700
