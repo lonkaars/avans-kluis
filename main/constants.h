@@ -1,9 +1,11 @@
 #define SERIAL_BAUD 115200
-#define MAX_CODE_LEN 1024
+#define MAX_CODE_LEN 64
 #define KB_DEBOUNCE_DELAY 100
 
-#define BUZZ_HAPPY 1000
-#define BUZZ_SAD   700
+#define BUZZ_OPEN  1000
+#define BUZZ_WRONG 700
+#define BUZZ_NUM   1200
+#define BUZZ_CLEAR 900
 
 #define PINOUT_KBM7   4
 #define PINOUT_KBM6   5
@@ -39,3 +41,4 @@
 #define KB_KEY_C 9
 #define KB_KEY_0 10
 #define KB_KEY_E 11
+#define KB_KEY_SET 12
