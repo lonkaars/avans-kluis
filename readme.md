@@ -2,11 +2,6 @@
 
 (In Dutch)
 
-## Dingen die nog gedaan moeten worden
-
-- Index out of bounds crash wanneer er meer dan MAX_CODE_LEN cijfers ingetoetst worden
-- Heel misschien een grappige easter egg ofzo
-
 ## Coole functies
 
 - Event-gebaseerde keyboard lezer
@@ -23,3 +18,4 @@ De veiligheid van deze software is niet gegarandeerd, want als de Arduino
 crasht of uitvalt wordt de code terug gezet op 0000. Dat maakt niet veel uit
 want je kunt de kluis toch openen door hem een lichte ram te geven vanaf de
 onderkant terwijl je hem open draait.
+

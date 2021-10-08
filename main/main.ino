@@ -1,5 +1,7 @@
 #include "constants.h"
 
+#define MIN(a, b) ((a) > (b) ? (b) : (a))
+
 /** BN (KB) -> PIN & PIN
  * 1   (0)  ->  D8 & D9
  * 2   (1)  ->  D8 & D7
@@ -215,7 +217,8 @@ void kb_onevent(kb_event ev) {
 
 			// voeg getal toe aan het einde van de code
 			code[codei] = num;
-			codei++; //TODO: fix array out of bounds crash
+			codei++;
+			codei = MIN(codei, MAX_CODE_LEN - 1);
 		}
 	}
 }
