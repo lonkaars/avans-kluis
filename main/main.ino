@@ -15,26 +15,32 @@
  * 11 (E) ->  4 & 5
  */
 
-int kb_rows[] = { KB_ROW_1, KB_ROW_2, KB_ROW_3, KB_ROW_4 };
-int kb_cols[] = { KB_COL_1, KB_COL_2, KB_COL_3 };
+const int kb_rows[] = { KB_ROW_1, KB_ROW_2, KB_ROW_3, KB_ROW_4 };
+const int kb_cols[] = { KB_COL_1, KB_COL_2, KB_COL_3 };
 
 #define LED_R 0
 #define LED_G 1
 #define LED_Y 2
 
-int led_pinouts[] = { PINOUT_LED_R, PINOUT_LED_G, PINOUT_LED_Y };
+const int led_pinouts[] = { PINOUT_LED_R, PINOUT_LED_G, PINOUT_LED_Y };
 unsigned long led_timings[] = { 0, 0, 0 };
 bool led_status[] = { 0, 0, 0 };
 
 unsigned char kb[12], kb_old[12];
 
-unsigned char correct_code[] = { 0, 0, 0, 0 };
+unsigned char correct_code[MAX_CODE_LEN];
+unsigned int correct_code_len = 4;
+
 unsigned char code[MAX_CODE_LEN];
 unsigned int codei = 0;
 
+/** @brief informatie over toets die `void kb_onevent()` mee krijgt */
 typedef struct {
+	/** @brief kb[12] index van de toets */
 	unsigned char key;
+	/** @brief true als de toets wordt ingedrukt */
 	bool down;
+	/** @brief tijd van toetsaanslag */
 	unsigned long timestamp;
 } kb_event;
 
@@ -99,10 +105,7 @@ void debug_print_arr(unsigned char x[12]) {
 	Serial.print("]\n");
 }
 
-/**
- * @brief functie die uitgevoerd wordt als
- * de verkeerde code is ingevoerd
- */
+/** @brief wordt uitgevoerd wanneer de verkeerde code is ingevoerd */
 void wrong_code_routine() {
 	tone(PINOUT_BUZZ, BUZZ_SAD);
 	digitalWrite(PINOUT_LED_R, HIGH);
@@ -113,10 +116,7 @@ void wrong_code_routine() {
 	noTone(PINOUT_BUZZ);
 }
 
-/**
- * @brief functie die uitgevoerd wordt als
- * de juiste code is ingevoerd
- */
+/** @brief wordt uitgevoerd wanneer de juiste code is ingevoerd */
 void unlock_routine() {
 	tone(PINOUT_BUZZ, BUZZ_HAPPY);
 	digitalWrite(PINOUT_RELAIS, HIGH);
@@ -127,6 +127,32 @@ void unlock_routine() {
 	digitalWrite(PINOUT_LED_G, LOW);
 	digitalWrite(PINOUT_RELAIS, LOW);
 	noTone(PINOUT_BUZZ);
+}
+
+/** @brief wordt uitgevoerd wanneer "E" wordt ingedrukt */
+void check_code() {
+	bool correct = true;
+
+	// check lengte
+	if (codei != correct_code_len) return wrong_code_routine();
+
+	for (int i = 0; i < correct_code_len; i++) {
+		if (correct_code[i] == code[i]) continue;
+
+		// dit voert alleen uit als een van
+		// de getallen in code[] niet gelijk is aan correct_code[]
+		correct = false;
+		break;
+	}
+	
+	// debug
+	Serial.print(correct, DEC);
+
+	// kijk mama zonder haakjes!
+	if (correct)
+		unlock_routine();
+	else
+		wrong_code_routine();
 }
 
 /**
@@ -141,38 +167,15 @@ void kb_onevent(kb_event ev) {
 
 	switch (ev.key) {
 		case KB_KEY_C: {
-			Serial.println("C");
-			// TODO: kijk of sizeof() werkt voor arrays
-			memset(&code, 0, sizeof(code));
+			// leeg code[]
+			memset(&code, 0, MAX_CODE_LEN);
 			codei = 0;
 
 			break;
 		}
 
 		case KB_KEY_E: {
-			Serial.println("E");
-			//TODO: array length
-			int correct_code_len = 3;
-			bool correct = true;
-
-			if (codei != correct_code_len) break;
-			for (int i = 0; i < correct_code_len; i++) {
-				if (correct_code[i] == code[i]) continue;
-
-				// dit voert alleen uit als een van
-				// de getallen in code[] niet gelijk is aan correct_code[]
-				correct = false;
-				break;
-			}
-			
-			// debug
-			Serial.print(correct, DEC);
-
-			// kijk mama zonder haakjes!
-			if (correct)
-				unlock_routine();
-			else
-				wrong_code_routine();
+			check_code();
 
 			break;
 		}
@@ -188,10 +191,6 @@ void kb_onevent(kb_event ev) {
 			// voeg getal toe aan het einde van de code
 			code[codei] = num;
 			codei++;
-
-			Serial.print("adding ");
-			Serial.print(num, DEC);
-			Serial.print(" to code\n");
 		}
 	}
 }
