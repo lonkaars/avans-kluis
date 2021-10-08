@@ -4,7 +4,6 @@
 
 ## Dingen die nog gedaan moeten worden
 
-- Code veranderen door de SET knop aan de binnenkant van de kluis in te drukken
 - Index out of bounds crash wanneer er meer dan MAX_CODE_LEN cijfers ingetoetst worden
 - Heel misschien een grappige easter egg ofzo
 
