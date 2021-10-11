@@ -141,6 +141,18 @@ void correct_code_routine() {
 	clear_code();
 }
 
+/** @brief wordt uitgevoerd als de code is veranderd */
+void set_code_buzz() {
+	digitalWrite(PINOUT_LED_G, HIGH);
+	for(int i = 0; i < 3; i++) {
+		tone(PINOUT_BUZZ, BUZZ_SET);
+		delay(50);
+		noTone(PINOUT_BUZZ);
+		delay(50);
+	}
+	digitalWrite(PINOUT_LED_G, LOW);
+}
+
 /** @brief wordt uitgevoerd wanneer "E" wordt ingedrukt */
 void check_code() {
 	bool correct = true;
@@ -194,6 +206,7 @@ void kb_onevent(kb_event ev) {
 				correct_code_len = codei;
 				clear_code();
 				set_mode = false;
+				set_code_buzz();
 			}
 
 			break;
@@ -202,6 +215,9 @@ void kb_onevent(kb_event ev) {
 		case KB_KEY_SET: {
 			clear_code();
 			set_mode = true;
+
+			tone(PINOUT_BUZZ, BUZZ_SET, 100);
+			led_set_timeout(LED_G, 100);
 
 			break;
 		}
